@@ -1,0 +1,12 @@
+data_path: data/sample1.json
+
+text_classifier:
+  model_name: gemma-3-27b-it
+  max_output_tokens: 1024
+  timout: 100
+  max_retries: 3
+
+app_server:
+  host: "0.0.0.0"
+  port: 8766
+  workers: 1
