@@ -78,7 +78,3 @@ class SettingsLoader(Generic[S]):
 
         self.settings = self.settings_model(**init_kwargs)
         return self.settings
-    
-    def print_settings(self):
-        if self.settings is not None:
-            print(self.settings.json(indent=4))
