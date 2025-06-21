@@ -1,6 +1,17 @@
 # SettingsLoader
 SettingsLoader is a component to load env, args, secrets and app settings into one type safe object.
 
+## Install
+You can either copy the code under the src directory or install it with:
+```sh
+pip install SettingsLoaderTypeSafe
+```
+
+When installed through pip, import it with:
+```python
+from settings_loader import SettingsBase, SettingsLoader
+```
+
 ## Usage guide
 First define the data classes to represent the information in your setting (env, args, secrets and app) files. Example:
 
