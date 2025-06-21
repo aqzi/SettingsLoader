@@ -9,7 +9,7 @@ pip install SettingsLoaderTypeSafe
 
 When installed through pip, import it with:
 ```python
-from settings_loader import SettingsBase, SettingsLoader
+from settings_loader.core import SettingsBase, SettingsLoader
 ```
 
 ## Usage guide
