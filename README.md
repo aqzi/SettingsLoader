@@ -55,3 +55,5 @@ The configure functions are optional and can be used to load settings from a spe
 - env: .env
 - secrets: .secrets.env
 - app: app_settings.yaml
+
+For more information and examples you can take a look at the unit tests.
