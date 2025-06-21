@@ -18,7 +18,7 @@ class SettingsLoader(Generic[S]):
     def __init__(self, settings_model: Optional[Type[S]]):
         self.settings_model = settings_model
         self.settings = None
-        self.app_settings_path = 'settings.yaml'
+        self.app_settings_path = 'app_settings.yaml'
         self.env_path = '.env'
         self.secrets_path = '.secrets.env'
 

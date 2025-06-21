@@ -9,7 +9,7 @@ def test_load_settings():
 
     settings = (
         SettingsLoader(Settings)
-            .configure_app('settings/settings.yaml')
+            .configure_app('settings/app_settings.yaml')
             .configure_env('settings/.env')
             .configure_secrets('settings/.secrets.env')
             .build()
@@ -35,8 +35,8 @@ def test_load_app_settings():
     class Settings(SettingsBase):
         app: AppSettings
 
-    settings1 = SettingsLoader(Settings).configure_app('settings/settings.json').build()
-    settings2 = SettingsLoader(Settings).configure_app('settings/settings.yaml').build()
+    settings1 = SettingsLoader(Settings).configure_app('settings/app_settings.json').build()
+    settings2 = SettingsLoader(Settings).configure_app('settings/app_settings.yaml').build()
 
     assert settings1.app == settings2.app
     
