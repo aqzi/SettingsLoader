@@ -1,4 +1,4 @@
-from settings_loader.core import SettingsBase, SettingsLoader
+from src.settings_loader.core import SettingsBase, SettingsLoader
 from tests.settings import AppSettings, ArgsSettings, EnvSettings, SecretsSettings
 
 def test_load_settings():
