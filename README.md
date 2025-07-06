@@ -13,7 +13,7 @@ pip install SettingsLoaderTypeSafe
 
 Once installed, import it in your project and start using it right away. For example:
 ```python
-from settings_loader.core import SettingsBase, SettingsLoader
+from settings_loader.core import SettingsLoader
 
 #Settings: your main settings class
 #settings.yml: path to main config file
