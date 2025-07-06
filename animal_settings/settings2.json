@@ -1,0 +1,35 @@
+{
+  "settings_loader": {
+    "animal_info": ["animal_settings/animal_specs.json", "animal_settings/animal_specs_part2.yml"],
+    "animal_caretaker_info": ["animal_settings/caretaker_info.txt"],
+    "secrets": ["animal_settings/secret_info.yml", "animal_settings/secret_info.json"],
+    "main_settings": ["settings.yaml"]
+  },
+  "animal_name": "{{main_settings}}",
+  "species": "{{main_settings}}",
+  "specs": "{{main_settings}}",
+  "feeding_schedule": {
+    "food_type": "{{args.food_type}}" ,
+    "feeding_times_per_day": "{{args.feeding_times_per_day}}"
+  },
+  "medical_history": {
+    "primary_vet": "{{env.primary_vet}}",
+    "last_checkup_date": "{{secrets.last_vet_visit_date}}",
+    "vaccinations_up_to_date": "{{args.vaccinations_up_to_date}}"
+  },
+  "caretaker_info": {
+    "name": "{{env.caretaker_name}}",
+    "area_of_expertise": "All animals living in {{this.specs.characteristics.habitat}}"
+  },
+  "preferences": {
+    "favorite_toys": ["ball", "{{animal_info.toy}}"]
+  },
+  "specs_copy": "{{main_settings.specs}}",
+  "specs_copy_with_overwrite": {
+    "__base__": "{{main_settings.specs}}",
+    "weight_kg": 200,
+    "characteristics": {
+      "lifespan_years": "15-20"
+    }
+  }
+}

@@ -1,3 +1,3 @@
-from .core import SettingsBase, SettingsLoader
+from .core import SettingsLoader
 
-__all__ = ["SettingsBase", "SettingsLoader"]
+__all__ = ["SettingsLoader"]

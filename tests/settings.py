@@ -1,28 +1,42 @@
-from pydantic import BaseModel, Field
+import datetime
+from typing import Optional
+from pydantic import BaseModel
 
+class FeedingSchedule(BaseModel):
+    food_type: str = "meat"
+    feeding_times_per_day: int = 2
 
-class InferenceSettings(BaseModel):
-    model_name: str
-    max_output_tokens: int
-    timout: int
-    max_retries: int
+class MedicalHistory(BaseModel):
+    primary_vet: str
+    last_checkup_date: Optional[datetime.date] = None
+    vaccinations_up_to_date: bool = False
+    notes: Optional[str] = None
 
-class AppServerSettings(BaseModel):
-    host: str
-    port: int
-    workers: int
+class CaretakerInfo(BaseModel):
+    name: str
+    contact_number: Optional[str] = None
+    preferred_language: str = "English"
+    area_of_expertise: str
 
-class EnvSettings(BaseModel):
-    test: str
+class Characteristics(BaseModel):
+    habitat: str
+    lifespan_years: str
 
-class SecretsSettings(BaseModel):
-    chatbot_api_key: str
-    test: str
+class Specs(BaseModel):
+    weight_kg: float
+    endangered: bool = False
+    characteristics: Characteristics
 
-class ArgsSettings(BaseModel):
-    show_config: bool = Field(False, description="Entire config will be printed if true")
+class Preferences(BaseModel):
+    favorite_toys: list[str]
 
-class AppSettings(BaseModel):
-    data_path: str
-    text_classifier: InferenceSettings
-    app_server: AppServerSettings
+class AnimalConfig(BaseModel):
+    animal_name: str
+    species: str
+    specs: Specs
+    feeding_schedule: FeedingSchedule
+    medical_history: MedicalHistory
+    caretaker_info: CaretakerInfo
+    preferences: Preferences
+    specs_copy: Specs
+    specs_copy_with_overwrite: Specs

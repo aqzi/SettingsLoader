@@ -1,0 +1,42 @@
+settings_loader:
+  animal_info: [animal_settings/animal_specs.json, animal_settings/animal_specs_part2.yml]
+  animal_caretaker_info: [animal_settings/caretaker_info.txt]
+  secrets: [animal_settings/secret_info.env]
+
+
+#==============================================================================================================================
+#==============================================================================================================================
+
+
+animal_name: Leo
+species: "{{animal_info.animal_type}}"
+
+specs:
+  endangered: "{{animal_info.extra_spec.endangered}}"
+  weight_kg: "{{animal_info.weight_kg}}"
+  characteristics: "{{animal_info.characteristics}}"
+  
+feeding_schedule:
+  food_type: "{{args}}"
+  feeding_times_per_day: 3
+
+medical_history:
+  primary_vet: John
+  last_checkup_date: "{{secrets.last_vet_visit_date}}"
+  vaccinations_up_to_date: "{{secrets.vaccinations_status}}"
+
+caretaker_info:
+  name: Emma
+  contact_number: "{{animal_caretaker_info}}"
+  preferred_language: "{{animal_caretaker_info.primary_language}}"
+  area_of_expertise: "All animals living in {{animal_info.characteristics.habitat}}"
+
+preferences:
+  favorite_toys: [ball, "{{animal_info.toy}}"]
+
+specs_copy: "{{this.specs}}"
+specs_copy_with_overwrite:
+  __base__: "{{this.specs}}"
+  weight_kg: 200
+  characteristics:
+    lifespan_years: "15-20"

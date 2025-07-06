@@ -1,87 +1,222 @@
 import argparse
+import copy
 import json
 import os
-from typing import Generic, Optional, Type, TypeVar, Union, get_args, get_origin, get_type_hints
-from dotenv import load_dotenv
+import re
+from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar
+from dotenv import load_dotenv, dotenv_values
 from pydantic import BaseModel
 import yaml
+import json
 
 S = TypeVar("S")
 
+DYNAMIC_PATTERN = re.compile(r"(\{\{.*?\}\})")
+
 class SettingsBase(BaseModel):
-    app: Optional[BaseModel] = None
-    env: Optional[BaseModel] = None
     args: Optional[BaseModel] = None
-    secrets: Optional[BaseModel] = None
+    settings: Any
 
 class SettingsLoader(Generic[S]):
-    def __init__(self, settings_model: Optional[Type[S]]):
+    def __init__(self, settings_model: Type[S], settings_path: str):
         self.settings_model = settings_model
-        self.settings = None
-        self.app_settings_path = 'app_settings.yaml'
-        self.env_path = '.env'
-        self.secrets_path = '.secrets.env'
+        self.settings_path = settings_path
+        self.args_model: Optional[BaseModel] = None
+        self.missing_data: list[str] = []
+        self.custom_loaders: dict[str, Callable[[str], dict[str, str]]] = {}
+        self.source_keys: list[str] = ['this']
 
-    def configure_env(self, env_path: str):
-        self.env_path = env_path
-        return self
-
-    def configure_secrets(self, secrets_path: str):
-        self.secrets_path = secrets_path
-        return self
-
-    def configure_app(self, app_settings_path: str):
-        self.app_settings_path = app_settings_path
+    def with_args(self, args_model: BaseModel):
+        self.args_model = args_model
         return self
     
-    def build(self):
-        def is_optional_base_model(field_type) -> bool:
-            origin = get_origin(field_type)
-            args = get_args(field_type)
+    def with_custom_source_loaders(self, loaders: dict[str, Callable[[str], dict[str, str]]] = {}):
+        self.custom_loaders = loaders
+        return self
+    
+    def _load_sources(self, loaders) -> Dict[str, Dict[str, Any]]:
+        loaded_sources: Dict[str, Dict[str, Any]] = {}
+        for source_key, source_files in loaders.items():
+            loaded_sources[source_key] = {}
+            self.source_keys.append(source_key)
 
-            if origin is Union and any(issubclass(arg, BaseModel) for arg in args if isinstance(arg, type)):
-                return True
-            return False
+            if source_files is not None:
+                for file_path in source_files:
+                    # Determine file format by extension
+                    if file_path.endswith((".yaml", ".yml")):
+                        with open(file_path, "r") as sf:
+                            data = yaml.safe_load(sf)
+                    elif file_path.endswith(".json"):
+                        with open(file_path, "r") as sf:
+                            data = json.load(sf)
+                    elif file_path.endswith(".env"):
+                        data = dotenv_values(file_path)
+                    else:
+                        for file_extension, cb_loader in self.custom_loaders.items():
+                            if file_path.endswith(f".{file_extension}"):
+                                data = cb_loader(file_path)
 
-        init_kwargs = {}
-        type_hints = get_type_hints(self.settings_model)
-
-        for field_name, field_type in type_hints.items():
-            if not is_optional_base_model(field_type):
-                if field_name == 'app':
-                    if self.app_settings_path.endswith(('.yml', '.yaml')):
-                        with open(self.app_settings_path, "r") as f:
-                            app_settings = yaml.safe_load(f)
-                        init_kwargs["app"] = field_type.model_validate(app_settings)
-                    elif self.app_settings_path.endswith('.json'):
-                        with open(self.app_settings_path, "r") as f:
-                            app_settings = json.load(f)
-                        init_kwargs["app"] = field_type(**app_settings)
-
-                elif field_name == 'env':
-                    load_dotenv(self.env_path, override=True)
-                    init_kwargs["env"] =  field_type(**{k: v for k, v in os.environ.items()})
-                    
-                elif field_name == 'args':
+                    data_formatted = self._replace_this_with_source_key(data, source_key)
+                    loaded_sources[source_key].update(data_formatted)
+            else:
+                if source_key == 'env':
+                    load_dotenv()
+                    data = {k: v for k, v in os.environ.items()}
+                    loaded_sources['env'] = self._replace_this_with_source_key(data, source_key)
+                elif source_key == 'args' and self.args_model is not None:
                     parser = argparse.ArgumentParser()
-                    for name, field in field_type.model_fields.items():
-                        parser.add_argument(f"--{name}", help=field.description or "")
+                    for name, arg_type in self.args_model.__annotations__.items():
+                        if arg_type is bool:
+                          parser.add_argument(f"--{name}", nargs="?", const=True)
+                        else:
+                            parser.add_argument(f"--{name}")
                     args = parser.parse_args()
                     cli_args_dict = {k: v for k, v in vars(args).items() if v is not None}
-                    init_kwargs["args"] = field_type(**cli_args_dict)
+                    loaded_sources['args'] = self._replace_this_with_source_key(cli_args_dict, source_key)
+        
+        return loaded_sources
+    
+    def _replace_this_with_source_key(self, data, replacement, target_substring="this."):
+        if isinstance(data, dict):
+            return {
+                k: self._replace_this_with_source_key(v, replacement, target_substring)
+                for k, v in data.items()
+            }
+        elif isinstance(data, list):
+            return [
+                self._replace_this_with_source_key(item, replacement, target_substring)
+                for item in data
+            ]
+        elif isinstance(data, str):
+            if target_substring in data:
+                return data.replace(target_substring, replacement + ".")
+            return data
+        else:
+            return data
 
-                elif field_name == 'secrets':
-                    if self.secrets_path.endswith('.env'):
-                        load_dotenv(self.secrets_path, override=True)
-                        init_kwargs["secrets"] = field_type(**{k: v for k, v in os.environ.items()})
-                    elif self.secrets_path.endswith(('.yml', '.yaml')):
-                        with open(self.secrets_path, "r") as f:
-                            secret_data = yaml.safe_load(f)
-                        init_kwargs["secrets"] = field_type(**secret_data)
-                    elif self.secrets_path.endswith('.json'):
-                        with open(self.secrets_path, "r") as f:
-                            secret_data = json.load(f)
-                        init_kwargs["secrets"] = field_type(**secret_data)
+    #get (nested) value from dict given a key path
+    def _get_value(self, source, key_path):
+        keys = key_path.split('.')
+        current = source
 
-        self.settings = self.settings_model(**init_kwargs)
-        return self.settings
+        for key in keys:
+            if isinstance(current, dict) and key in current:
+                current = current[key]
+            else:
+                # If current is a dynamic placeholder like "{{something}}"
+                if isinstance(current, str) and current.strip().startswith("{{") and current.strip().endswith("}}"):
+                    return f"{{{{{current.strip()[2:-2].strip()}.{".".join(keys)}}}}}"
+
+                return None
+        return current
+    
+    def _has_unresolved_field(self, data: Any) -> bool:
+        if isinstance(data, dict):
+            for value in data.values():
+                if self._has_unresolved_field(value):
+                    return True
+        elif isinstance(data, list):
+            for item in data:
+                if self._has_unresolved_field(item):
+                    return True
+        elif isinstance(data, str):
+            if DYNAMIC_PATTERN.fullmatch(data.strip()):
+                return True
+        return False
+    
+    #extract all dynamic vars and output in format such that reconstruction is possible
+    def _split_and_extract(self, data) -> tuple[list[str], list[bool]]:
+        parts = DYNAMIC_PATTERN.split(data)
+        extracted = []
+        is_dynamic = []
+        for part in parts:
+            if not part: continue
+
+            if DYNAMIC_PATTERN.fullmatch(part): #gives {{...}}
+                extracted.append(part)
+                is_dynamic.append(True)
+            else:
+                extracted.append(part)
+                is_dynamic.append(False)
+
+        return extracted, is_dynamic
+
+    def _resolve_dynamic_values(self, data: Any, context: Dict[str, Dict[str, Any]], path: str = ""):
+        if isinstance(data, dict):
+            resolved = {}
+            for k, v in data.items():
+                current_path = f"{path}.{k}" if path else k
+                resolved_value = self._resolve_dynamic_values(v, context, path=current_path)
+                if resolved_value is not None:
+                    resolved[k] = resolved_value
+
+            if "__base__" in resolved: #When __base__ is used additonal fields are not allowed. Only fields overwrites are allowed.
+                base = resolved.pop("__base__")
+                result = copy.deepcopy(base)
+
+                #Recursively merge overwrites into the base
+                def deep_update(d, u):
+                    for k, v in u.items():
+                        if isinstance(v, dict) and isinstance(d.get(k), dict): deep_update(d[k], v)
+                        else: d[k] = v
+                    return d
+                
+                resolved = deep_update(result, resolved)
+
+            return resolved
+        elif isinstance(data, list):
+            return [
+                self._resolve_dynamic_values(item, context, path=f"{path}[{idx}]") #TODO: check if this is correct
+                for idx, item in enumerate(data)
+            ]
+        elif isinstance(data, str):
+            parts, is_dynamic_flags = self._split_and_extract(data)
+            result = ""
+
+            if len(parts) > 0:
+                for part, is_dynamic in zip(parts, is_dynamic_flags):
+                    if not is_dynamic: result = result + part
+                    else:
+                        placeholder = part[2:-2].strip()
+
+                        for source_key in self.source_keys:
+                            prefix = source_key + "."
+                            key_path = None
+
+                            if placeholder.startswith(prefix): key_path = placeholder[len(prefix):]
+                            elif placeholder == source_key: key_path = path.rsplit('.', 1)[-1]
+
+                            if key_path is not None:
+                                source = context.get(source_key)
+                                if source is None:
+                                    self.missing_data.append(source_key)
+                                    return None
+                                value = self._get_value(source, key_path)
+                                if self._has_unresolved_field(value):
+                                    value = self._resolve_dynamic_values(value, context, path)
+
+                                #if value is not string, then there is only 1 possible true result
+                                if isinstance(value, str): result = result + value
+                                else: return value
+
+                                break
+
+            return result
+        else:
+            return data
+
+    def load(self):
+        with open(self.settings_path, "r") as f:
+            settings = yaml.safe_load(f)
+
+        loaders = settings.pop("settings_loader", {})
+        loaders['env'] = None
+        loaders['args'] = None
+
+        loaded_sources = self._load_sources(loaders)
+        loaded_sources['this'] = settings
+        self.source_keys.sort(key=len, reverse=True) #if you have key ai and ai_extra, you first want to match on ai_extra
+        
+        resolved_settings = self._resolve_dynamic_values(settings, loaded_sources)
+
+        return self.settings_model(**resolved_settings)

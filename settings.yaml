@@ -1,0 +1,63 @@
+# Main settings file containing both values and references.
+# References are wrapped in {{<source_key>.<field_path (. seperated)>}}. 
+# Source_key refers to the source files that contains the settings you need.
+# The 'settings_loader' section maps sources keys with there respective file sources.
+#
+# Reserved source keys:
+#   - 'env': loads from .env file
+#   - 'args': loads from command-line arguments
+#
+# Source types we support are: json, yaml, env and args. 
+# You can extends these with custom source types but then you hvae to create a custom source parser for it.
+
+#Define all settings source files
+settings_loader:
+  animal_info: [animal_settings/animal_specs.json, animal_settings/animal_specs_part2.yml]
+  animal_caretaker_info: [animal_settings/caretaker_info.txt] #this requires custom loader as .txt is not supported by default
+  secrets: [animal_settings/secret_info.env]
+
+
+#==============================================================================================================================
+#==============================================================================================================================
+
+
+#Create a Pydantic BaseModel class that includes fields (can be nested models) matching the structure below (examples: ./tests/settings.py)
+animal_name: Leo
+
+#Will be replaced by 'animal_type' value within the animal_info source. The 'animal_info' key is binded to both settings/animal_specs.json and settings/animal_specs_part2.yml
+#If 'animal_info' would be specified in both files, it will be taken from the last source in the list. In this case it would come from animal_specs_part2.yml
+species: "{{animal_info.animal_type}}"
+
+specs:
+  endangered: "{{animal_info.extra_spec.endangered}}" #It also support nested fields
+  weight_kg: "{{animal_info.weight_kg}}"
+  characteristics:
+    habitat: "{{animal_info.characteristics.habitat}}"
+    lifespan_years: "{{animal_info.characteristics.lifespan_years}}"
+
+feeding_schedule:
+  food_type: "{{args.food_type}}" #Will be replaced by food_type value from the given command line arguments
+  feeding_times_per_day: 3
+
+medical_history:
+  primary_vet: John
+  last_checkup_date: "{{secrets.last_vet_visit_date}}"
+  vaccinations_up_to_date: "{{secrets.vaccinations_status}}"
+
+caretaker_info:
+  name: Emma
+  contact_number: "{{animal_caretaker_info.contact_number}}"
+  preferred_language: "{{animal_caretaker_info.primary_language}}"
+  #You can add additional text along with 1 or more refs. However this only works for strings!
+  area_of_expertise: "All animals living in {{this.specs.characteristics.habitat}}"
+
+preferences:
+  favorite_toys: [ball, "{{animal_info.toy}}"]
+
+#This illustrates how to reference settings within this file and overwrite some fields
+specs_copy: "{{this.specs}}" #Only works when specs_copy object is identical to specs
+specs_copy_with_overwrite:
+  __base__: "{{this.specs}}" #__base__ is a reserved keyword. It's a reference to settings that have to be copied
+  weight_kg: "{{env.weight_kg}}" #weight_kg and lifespan_years are field overwrites
+  characteristics:
+    lifespan_years: "15-20"
