@@ -13,10 +13,6 @@ S = TypeVar("S")
 
 DYNAMIC_PATTERN = re.compile(r"(\{\{.*?\}\})")
 
-class SettingsBase(BaseModel):
-    args: Optional[BaseModel] = None
-    settings: Any
-
 class SettingsLoader(Generic[S]):
     def __init__(self, settings_model: Type[S], settings_path: str):
         self.settings_model = settings_model
@@ -218,5 +214,8 @@ class SettingsLoader(Generic[S]):
         self.source_keys.sort(key=len, reverse=True) #if you have key ai and ai_extra, you first want to match on ai_extra
         
         resolved_settings = self._resolve_dynamic_values(settings, loaded_sources)
+
+        if self.missing_data:
+            print(f"Warning: the following sources were not found: {', '.join(self.missing_data)}")
 
         return self.settings_model(**resolved_settings)
