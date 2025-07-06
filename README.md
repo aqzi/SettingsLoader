@@ -15,7 +15,9 @@ Once installed, import it in your project and start using it right away. For exa
 ```python
 from settings_loader.core import SettingsBase, SettingsLoader
 
-settings = SettingsLoader(Settings, 'settings.yml').with_args(ArgsSettings).load()
+#Settings: your main settings class
+#settings.yml: path to main config file
+settings = SettingsLoader(Settings, 'settings.yml').load()
 ```
 
 
