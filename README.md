@@ -1,5 +1,5 @@
 # SettingsLoader
-![Version 0.2.0](https://img.shields.io/badge/version-0.2.0-brightgreen) ![example workflow](https://github.com/aqzi/SettingsLoader/actions/workflows/python-tests.yml/badge.svg) ![License MIT](https://img.shields.io/badge/license-MIT-green])
+![Version 0.2.1](https://img.shields.io/badge/version-0.2.1-brightgreen) ![example workflow](https://github.com/aqzi/SettingsLoader/actions/workflows/python-tests.yml/badge.svg) ![License MIT](https://img.shields.io/badge/license-MIT-green])
 
 SettingsLoader is a component to load env, args, secrets and app settings into one type safe object. It's especially valuable if you need to pull settings from multiple sources. By default, it supports YAML, JSON, .env files, and command-line arguments. Additionally, you can extend it with custom source loaders to handle other file formats or configuration mechanisms as needed.
 
