@@ -35,7 +35,7 @@ def test_load_settings():
     assert settings.medical_history.last_checkup_date == datetime.date(2025, 6, 1)
     assert settings.medical_history.vaccinations_up_to_date == True
     assert settings.medical_history.notes == None
-    assert settings.feeding_schedule.food_type == "meat"
+    assert settings.feeding_schedule.food_type == "fish"
     assert settings.feeding_schedule.feeding_times_per_day == 3
     assert settings.caretaker_info.name == "Emma"
     assert settings.caretaker_info.contact_number == "+9988776655"
@@ -66,7 +66,7 @@ def test_settings_with_general_dynamic_vars(monkeypatch):
 
     monkeypatch.setattr(sys, "argv", ['program', '--food_type', 'meat'])
 
-    settings1 = SettingsLoader(AnimalConfig, 'settings.yaml').load()
+    settings1 = SettingsLoader(AnimalConfig, 'settings.yaml').with_args(ArgsSettings).load()
     settings2 = SettingsLoader(AnimalConfig, 'animal_settings/settings3.yaml').with_args(ArgsSettings).load()
 
     assert settings1.__dict__ == settings2.__dict__
@@ -77,7 +77,7 @@ def test_settings_json_with_dynamic_vars_in_sources(monkeypatch):
         feeding_times_per_day: int
         vaccinations_up_to_date: bool
 
-    monkeypatch.setattr(sys, "argv", ['program', '--food_type', 'meat', '--feeding_times_per_day', '3', '--vaccinations_up_to_date'])
+    monkeypatch.setattr(sys, "argv", ['program', '--food_type', 'fish', '--feeding_times_per_day', '3', '--vaccinations_up_to_date'])
 
     settings1 = SettingsLoader(AnimalConfig, 'settings.yaml').load()
     settings2 = SettingsLoader(AnimalConfig, 'animal_settings/settings2.json').with_args(ArgsSettings).load()

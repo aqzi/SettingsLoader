@@ -167,35 +167,46 @@ class SettingsLoader(Generic[S]):
             ]
         elif isinstance(data, str):
             parts, is_dynamic_flags = self._split_and_extract(data)
-            result = ""
+            result = None
 
             if len(parts) > 0:
                 for part, is_dynamic in zip(parts, is_dynamic_flags):
-                    if not is_dynamic: result = result + part
+                    if not is_dynamic: 
+                        if result is None: result = part
+                        else: result = result + part
                     else:
-                        placeholder = part[2:-2].strip()
+                        content = part[2:-2].strip()
+                        placeholders = [p.strip() for p in content.split(">")]
+                        found = False
 
-                        for source_key in self.source_keys:
-                            prefix = source_key + "."
-                            key_path = None
+                        for i, placeholder in enumerate(placeholders):
+                            is_last = (i == len(placeholders) - 1)
 
-                            if placeholder.startswith(prefix): key_path = placeholder[len(prefix):]
-                            elif placeholder == source_key: key_path = path.rsplit('.', 1)[-1]
+                            for source_key in self.source_keys:
+                                prefix = source_key + "."
+                                key_path = None
 
-                            if key_path is not None:
-                                source = context.get(source_key)
-                                if source is None:
-                                    self.missing_data.append(source_key)
-                                    return None
-                                value = self._get_value(source, key_path)
-                                if self._has_unresolved_field(value):
-                                    value = self._resolve_dynamic_values(value, context, path)
+                                if placeholder.startswith(prefix): key_path = placeholder[len(prefix):]
+                                elif placeholder == source_key: key_path = path.rsplit('.', 1)[-1]
 
-                                #if value is not string, then there is only 1 possible true result
-                                if isinstance(value, str): result = result + value
-                                else: return value
+                                if key_path is not None:
+                                    source = context.get(source_key)
+                                    if source is None:
+                                        self.missing_data.append(source_key)
+                                        return None
+                                    value = self._get_value(source, key_path)
+                                    if self._has_unresolved_field(value):
+                                        value = self._resolve_dynamic_values(value, context, path)
 
-                                break
+                                    #if value is not string, then there is only 1 possible true result
+                                    if isinstance(value, str): 
+                                        if result is None: result = value
+                                        else: result = result + value
+                                    elif is_last: return value
+
+                                    if value is not None: found = True
+                                    break
+                            if found: break
 
             return result
         else:
