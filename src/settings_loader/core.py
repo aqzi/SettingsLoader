@@ -101,7 +101,9 @@ class SettingsLoader(Generic[S]):
             else:
                 # If current is a dynamic placeholder like "{{something}}"
                 if isinstance(current, str) and current.strip().startswith("{{") and current.strip().endswith("}}"):
-                    return f"{{{{{current.strip()[2:-2].strip()}.{".".join(keys)}}}}}"
+                    inner = current.strip()[2:-2].strip()
+                    path = ".".join(keys)
+                    return f"{{{{{inner}.{path}}}}}"
 
                 return None
         return current
