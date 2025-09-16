@@ -184,6 +184,10 @@ class SettingsLoader(Generic[S]):
                         for i, placeholder in enumerate(placeholders):
                             is_last = (i == len(placeholders) - 1)
 
+                            #if it's the last placeholder and it doesn't have a dot, it's a literal value
+                            if is_last and '.' not in placeholder and placeholder not in self.source_keys:
+                                return placeholder
+
                             for source_key in self.source_keys:
                                 prefix = source_key + "."
                                 key_path = None

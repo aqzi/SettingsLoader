@@ -39,7 +39,7 @@ The main settings file must be in either YAML or JSON format. This file should i
     - source_key refers to a key defined in your settings_loader.
     - field_path specifies the path to the desired value within the corresponding source file. Fields within field_path are also dot seperated.
     
-    Within a reference, you can use the `>` symbol to define a fallback sequence. The settings loader will first attempt to retrieve the value from the first source. If the value is None, it will continue checking the next source in the sequence.
+    Within a reference, the `>` symbol defines a fallback sequence. The settings loader first tries to resolve the value from the leftmost source. If that source is None, it proceeds to the next one, and so on, until a value is found. The sequence may end with a default value if desired.
 
     ```yml
     animal_name: Leo #static value
@@ -56,8 +56,8 @@ The main settings file must be in either YAML or JSON format. This file should i
             lifespan_years: "{{animal_info.characteristics.lifespan_years}}"
 
     feeding_schedule:
-        #Will be replaced by food_type value from the given command line arguments. If it's none it will be taken from the environment.
-        food_type: "{{args.food_type > env.food_type}}"
+        # food_type is taken from args, then env, otherwise defaults to "fish". The sequence can be extended.
+        food_type: "{{args.food_type > env.food_type > fish}}"
         feeding_times_per_day: 3
 
     medical_history:
