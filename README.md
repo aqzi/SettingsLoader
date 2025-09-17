@@ -57,6 +57,7 @@ The main settings file must be in either YAML or JSON format. This file should i
 
     feeding_schedule:
         # food_type is taken from args, then env, otherwise defaults to "fish". The sequence can be extended.
+        # if the default value contains dots, make sure to wrap it in single quoates
         food_type: "{{args.food_type > env.food_type > fish}}"
         feeding_times_per_day: 3
 
